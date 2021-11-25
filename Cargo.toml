@@ -57,6 +57,11 @@ helium-proto = { git = "https://github.com/helium/proto", branch="master", featu
 helium-crypto = { git = "https://github.com/PeterHeckel-TEK/helium-crypto-rs", ref = "6e72ac13e3d0f3adac8ebede000d16a143b15bd8" }
 longfi = { git = "https://github.com/helium/longfi-rs", branch = "main" }
 
+[features]
+default = ["ecc608-i2c"]
+ecc608-i2c = ["helium-crypto/ecc608"]
+ecc608-swi = ["helium-crypto/ecc608-swi"]
+
 [profile.release]
 opt-level = "z"
 lto = true
