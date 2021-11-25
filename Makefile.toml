@@ -1,5 +1,5 @@
 [config]
-additional_profiles = ["klkgw", "ramips_24kec", "smartharvest", "dragino", "mtcdt", "raspi01", "raspi234", "resiot", "cotx", "raspi_64"]
+additional_profiles = ["klkgw", "ramips_24kec", "smartharvest", "dragino", "mtcdt", "raspi01", "raspi234", "resiot", "cotx", "raspi_64", "tektelic"]
 default_to_workspace = false
 
 [env]
@@ -58,6 +58,11 @@ IPK_USE_AR = true
 CROSS_TARGET = "aarch64-unknown-linux-gnu"
 PKG = "deb"
 
+[env.tektelic]
+CROSS_TARGET = "arm-unknown-linux-gnueabihf"
+PKG = "ipk"
+IPK_USE_AR = true
+
 [tasks.cross]
 description = "Runs the cross rust compiler."
 category = "Build"
@@ -71,11 +76,24 @@ args = [
   "--release"
 ]
 
+[tasks.cargo]
+description = "Runs the cargo rust compiler."
+category = "Build"
+install_crate = false
+condition = { env_set = ["CROSS_TARGET"] }
+command = "cargo"
+args = [
+  "build",
+  "--target",
+  "${CROSS_TARGET}",
+  "--release"
+]
+
 [tasks.pkg]
 description = "Builds a package for a given packaging profile"
 category = "Package"
 condition = { env_set = ["PKG"]}
-env = { "PKG_NAME" = "helium-gateway-v${CARGO_MAKE_CRATE_VERSION}-${CARGO_MAKE_PROFILE}.${PKG}"}
+env = { "PKG_NAME" = "helium-gateway_v${CARGO_MAKE_CRATE_VERSION}-${CARGO_MAKE_PROFILE}.${PKG}"}
 run_task = [
 	{ name = "ipk", condition = { env = { "PKG" = "ipk" } } },
 	{ name = "deb", condition = { env = { "PKG" = "deb" } } }
@@ -84,7 +102,7 @@ run_task = [
 [tasks.ipk]
 description = "Builds an ipk for openwrt/opk based targets"
 category = "Package"
-dependencies = ["cross"]
+dependencies = ["cargo"]
 condition = { env_set = ["CROSS_TARGET", "TAR", "AR", "PKG_NAME", "IPK_USE_AR"] }
 env = { "PKG_BUILD_DIR" = "target/pkg/${CARGO_MAKE_PROFILE}", "PKG_SRC_DIR" = "package/${CARGO_MAKE_PROFILE}" }
 script = '''
@@ -98,6 +116,12 @@ script = '''
 	# inject default.toml
 	cp -R config/default.toml ${PKG_BUILD_DIR}/data/etc/helium_gateway
 
+	# inject settings.toml
+	cp -R config/settings.toml ${PKG_BUILD_DIR}/data/etc/helium_gateway/settings.toml
+
+	# inject helium-gateway.syslog.conf
+	cp -R config/helium-gateway.syslog.conf ${PKG_BUILD_DIR}/data/usr/share/syslog-ng/include/tektelic/custom/helium-gateway.conf
+
 	# install binary
 	mkdir -p ${PKG_BUILD_DIR}/data/usr/bin
 	cp target/${CROSS_TARGET}/release/helium_gateway ${PKG_BUILD_DIR}/data/usr/bin
@@ -107,10 +131,11 @@ script = '''
 	export CARGO_MAKE_PROFILE CARGO_MAKE_CRATE_VERSION
         envsubst < config/conffiles > ${PKG_BUILD_DIR}/control/conffiles
         chmod +x ${PKG_BUILD_DIR}/control/conffiles
-	for control_file in control preinst postinst prerm; do
-	    envsubst < ${PKG_SRC_DIR}/control/${control_file} > ${PKG_BUILD_DIR}/control/${control_file}
-	    chmod +x ${PKG_BUILD_DIR}/control/${control_file}
+	envsubst < ${PKG_SRC_DIR}/control/control > ${PKG_BUILD_DIR}/control/control
+	for control_file in preinst postinst prerm; do
+	    cp ${PKG_SRC_DIR}/control/${control_file} ${PKG_BUILD_DIR}/control/${control_file}
 	done
+	chmod +x ${PKG_BUILD_DIR}/control/*
 
     # package together
 	cd ${PKG_BUILD_DIR}/control
@@ -124,8 +149,8 @@ script = '''
 	cd ${PKG_BUILD_DIR}
 	if ${IPK_USE_AR} ; then
 		rm -f ../${PKG_NAME}
-		${AR} r ../${PKG_NAME} ./debian-binary ./data.tar.gz ./control.tar.gz
-	else
+		${AR} r ../${PKG_NAME} ./debian-binary ./control.tar.gz ./data.tar.gz
+    else
 		${TAR} --numeric-owner --group=0 --owner=0 -czf ../${PKG_NAME} ./debian-binary ./data.tar.gz ./control.tar.gz
 	fi
 	cd ${CARGO_MAKE_WORKING_DIRECTORY}
