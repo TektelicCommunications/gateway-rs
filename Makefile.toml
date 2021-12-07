@@ -145,7 +145,7 @@ script = '''
 
 	# install control files
 	mkdir -p ${PKG_BUILD_DIR}/control
-	export CARGO_MAKE_PROFILE CARGO_MAKE_CRATE_VERSION
+	export CARGO_MAKE_PROFILE CARGO_MAKE_CRATE_VERSION PKG_TEKTELIC_VERSION
         envsubst < config/conffiles > ${PKG_BUILD_DIR}/control/conffiles
         chmod +x ${PKG_BUILD_DIR}/control/conffiles
 	envsubst < ${PKG_SRC_DIR}/control/control > ${PKG_BUILD_DIR}/control/control
