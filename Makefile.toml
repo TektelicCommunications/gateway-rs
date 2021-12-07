@@ -133,12 +133,6 @@ script = '''
 	# inject default.toml
 	cp -R config/default.toml ${PKG_BUILD_DIR}/data/etc/helium_gateway
 
-	# inject settings.toml
-	cp -R config/settings_tektelic.toml ${PKG_BUILD_DIR}/data/etc/helium_gateway/settings.toml
-
-	# inject helium-gateway.syslog.conf
-	cp -R config/helium-gateway.syslog.conf ${PKG_BUILD_DIR}/data/usr/share/syslog-ng/include/tektelic/custom/helium-gateway.conf
-
 	# install binary
 	mkdir -p ${PKG_BUILD_DIR}/data/usr/bin
 	cp target/${CROSS_TARGET}/release/helium_gateway ${PKG_BUILD_DIR}/data/usr/bin
