@@ -59,7 +59,7 @@ CROSS_TARGET = "aarch64-unknown-linux-gnu"
 PKG = "deb"
 
 [env.tektelic]
-CROSS_TARGET = "arm-unknown-linux-gnueabihf"
+CROSS_TARGET = "armv7-unknown-linux-gnueabihf"
 PKG = "ipk"
 IPK_USE_AR = true
 
